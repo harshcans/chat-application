@@ -1,6 +1,6 @@
 
 const Conversation = require("./conversationSchema");
-const User = require("../userSchema");
+const User = require("../models/userSchema");
 
 const createConversation = async (req, res) => {
     try {
