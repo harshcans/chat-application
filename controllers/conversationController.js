@@ -1,89 +1,94 @@
 
-// const Conversation = require("./conversationSchema");
-// const User = require("../models/userSchema");
+const mongoose = require("mongoose");
+const Conversation = require("../models/conversionSchema");
+const User = require("../models/userSchema");
 
-// const createConversation = async (req, res) => {
-//     try {
-//         const { userId } = req.body;
+const createConversation = async (req, res) => {
+  try {
+    const { participantId } = req.body;
+    const userId = req.userId;
 
-//         if (!userId) {
-//             return res.status(400).json({
-//                 message: "User ID is required"
-//             });
-//         }
+    if (!participantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Participant ID is required"
+      });
+    }
 
-//         if (userId === req.userId.toString()) {
-//             return res.status(400).json({
-//                 message: "You cannot start a conversation with yourself"
-//             });
-//         }
+    if (!mongoose.isValidObjectId(participantId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid participant ID"
+      });
+    }
 
-//         const user = await User.findById(userId);
+    if (participantId === userId.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot start a conversation with yourself"
+      });
+    }
 
-//         if (!user) {
-//             return res.status(404).json({
-//                 message: "User not found"
-//             });
-//         }
+    const participant = await User.findById(participantId);
 
-//         const existingConversation = await Conversation.findOne({
-//             participants: {
-//                 $all: [req.userId, userId]
-//             }
-//         });
+    if (!participant) {
+      return res.status(404).json({
+        success: false,
+        message: "Participant not found"
+      });
+    }
 
-//         if (existingConversation) {
-//             return res.status(200).json({
-//                 message: "Conversation already exists",
-//                 conversation: existingConversation
-//             });
-//         }
+    const existingConversation = await Conversation.findOne({
+      participants: { $all: [userId, participantId] }
+    });
 
-//         const conversation = await Conversation.create({
-//             participants: [req.userId, userId]
-//         });
+    if (existingConversation) {
+      return res.status(200).json({
+        success: true,
+        message: "Conversation already exists",
+        conversation: existingConversation
+      });
+    }
 
-//         res.status(201).json({
-//             message: "Conversation created successfully",
-//             conversation
-//         });
-//     } catch (error) {
-//         if (error.name === "CastError") {
-//             return res.status(400).json({
-//                 message: "Invalid user ID"
-//             });
-//         }
+    const conversation = await Conversation.create({
+      participants: [userId, participantId]
+    });
 
-//         console.log(error);
+    return res.status(201).json({
+      success: true,
+      message: "Conversation created successfully",
+      conversation
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to create conversation"
+    });
+  }
+};
 
-//         res.status(500).json({
-//             message: "Internal server error"
-//         });
-//     }
-// };
+const getConversations = async (req, res) => {
+  try {
+    const conversations = await Conversation.find({
+      participants: req.userId
+    })
+      .populate("participants", "name email")
+      .sort({ updatedAt: -1 });
 
-// const getConversations = async (req, res) => {
-//     try {
-//         const conversations = await Conversation.find({
-//             participants: req.userId
-//         })
-//             .populate("participants", "name email")
-//             .sort({ updatedAt: -1 });
+    return res.status(200).json({
+      success: true,
+      count: conversations.length,
+      conversations
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch conversations"
+    });
+  }
+};
 
-//         res.status(200).json({
-//             count: conversations.length,
-//             conversations
-//         });
-//     } catch (error) {
-//         console.log(error);
-
-//         res.status(500).json({
-//             message: "Internal server error"
-//         });
-//     }
-// };
-
-// module.exports = {
-//     createConversation,
-//     getConversations
-// };
+module.exports = {
+  createConversation,
+  getConversations
+};
