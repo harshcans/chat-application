@@ -30,23 +30,6 @@ const sendOtpEmail = async (email, otp) => {
     });
 };
 
-const setAccessCookie = (res, accessToken) => {
-    res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60 * 1000
-    });
-};
-
-const clearAccessCookie = (res) => {
-    res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax"
-    });
-};
-
 const createAccessToken = (userId) => {
     return jwt.sign(
         { userId },
@@ -58,13 +41,13 @@ const createAccessToken = (userId) => {
 };
 
 const createRefreshToken = (userId) => {
-    const refreshDays = Number(process.env.REFRESH_TOKEN_DAYS || 7);
+    const days = Number(process.env.REFRESH_TOKEN_DAYS || 7);
 
     return jwt.sign(
         { userId },
         process.env.JWT_REFRESH_SECRET,
         {
-            expiresIn: `${refreshDays}d`
+            expiresIn: `${days}d`
         }
     );
 };
@@ -110,10 +93,7 @@ const registerUser = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const otp = generateOtp();
         const hashedOtp = await bcrypt.hash(otp, 10);
-
-        const otpMinutes = Number(
-            process.env.OTP_EXPIRES_MINUTES || 5
-        );
+        const otpMinutes = Number(process.env.OTP_EXPIRES_MINUTES || 5);
 
         const user = await User.create({
             name: name.trim(),
@@ -121,9 +101,7 @@ const registerUser = async (req, res) => {
             password: hashedPassword,
             isVerified: false,
             otp: hashedOtp,
-            otpExpiresAt: new Date(
-                Date.now() + otpMinutes * 60 * 1000
-            )
+            otpExpiresAt: new Date(Date.now() + otpMinutes * 60 * 1000)
         });
 
         try {
@@ -151,13 +129,11 @@ const registerUser = async (req, res) => {
         });
     } catch (error) {
         if (error.name === "ValidationError") {
-            const messages = Object.values(error.errors)
-                .map((item) => item.message)
-                .join(", ");
-
             return res.status(400).json({
                 success: false,
-                message: messages
+                message: Object.values(error.errors)
+                    .map((item) => item.message)
+                    .join(", ")
             });
         }
 
@@ -288,15 +264,10 @@ const resendOtp = async (req, res) => {
         }
 
         const otp = generateOtp();
-        const hashedOtp = await bcrypt.hash(otp, 10);
-        const otpMinutes = Number(
-            process.env.OTP_EXPIRES_MINUTES || 5
-        );
+        const otpMinutes = Number(process.env.OTP_EXPIRES_MINUTES || 5);
 
-        user.otp = hashedOtp;
-        user.otpExpiresAt = new Date(
-            Date.now() + otpMinutes * 60 * 1000
-        );
+        user.otp = await bcrypt.hash(otp, 10);
+        user.otpExpiresAt = new Date(Date.now() + otpMinutes * 60 * 1000);
 
         await user.save();
 
@@ -381,11 +352,10 @@ const loginUser = async (req, res) => {
         user.refreshTokenHash = await bcrypt.hash(refreshToken, 10);
         await user.save();
 
-        setAccessCookie(res, accessToken);
-
         return res.status(200).json({
             success: true,
             message: "Login successful",
+            accessToken,
             refreshToken,
             user: {
                 id: user._id,
@@ -395,13 +365,6 @@ const loginUser = async (req, res) => {
             }
         });
     } catch (error) {
-        if (error.name === "ValidationError") {
-            return res.status(400).json({
-                success: false,
-                message: error.message
-            });
-        }
-
         console.error(error.message);
 
         return res.status(500).json({
@@ -415,10 +378,7 @@ const refreshAccessToken = async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
-        if (
-            typeof refreshToken !== "string" ||
-            !refreshToken
-        ) {
+        if (typeof refreshToken !== "string" || !refreshToken) {
             return res.status(401).json({
                 success: false,
                 message: "Refresh token is required"
@@ -458,11 +418,10 @@ const refreshAccessToken = async (req, res) => {
         user.refreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
         await user.save();
 
-        setAccessCookie(res, accessToken);
-
         return res.status(200).json({
             success: true,
             message: "Tokens refreshed successfully",
+            accessToken,
             refreshToken: newRefreshToken
         });
     } catch (error) {
@@ -477,46 +436,54 @@ const logoutUser = async (req, res) => {
     try {
         const { refreshToken } = req.body;
 
-        if (typeof refreshToken === "string" && refreshToken) {
-            try {
-                const decoded = jwt.verify(
-                    refreshToken,
-                    process.env.JWT_REFRESH_SECRET
-                );
-
-                const user = await User.findById(decoded.userId)
-                    .select("+refreshTokenHash");
-
-                if (user && user.refreshTokenHash) {
-                    const isTokenCorrect = await bcrypt.compare(
-                        refreshToken,
-                        user.refreshTokenHash
-                    );
-
-                    if (isTokenCorrect) {
-                        user.refreshTokenHash = null;
-                        await user.save();
-                    }
-                }
-            } catch (error) {
-                // Invalid or expired refresh tokens cannot be reused.
-            }
+        if (
+            typeof refreshToken !== "string" ||
+            !refreshToken
+        ) {
+            return res.status(400).json({
+                success: false,
+                message: "Refresh token is required"
+            });
         }
 
-        clearAccessCookie(res);
+        const decoded = jwt.verify(
+            refreshToken,
+            process.env.JWT_REFRESH_SECRET
+        );
+
+        const user = await User.findById(decoded.userId)
+            .select("+refreshTokenHash");
+
+        if (!user || !user.refreshTokenHash) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid refresh token"
+            });
+        }
+
+        const isTokenCorrect = await bcrypt.compare(
+            refreshToken,
+            user.refreshTokenHash
+        );
+
+        if (!isTokenCorrect) {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid refresh token"
+            });
+        }
+
+        user.refreshTokenHash = null;
+        await user.save();
 
         return res.status(200).json({
             success: true,
             message: "Logged out successfully"
         });
     } catch (error) {
-        console.error(error.message);
-
-        clearAccessCookie(res);
-
-        return res.status(500).json({
+        return res.status(401).json({
             success: false,
-            message: "Server error"
+            message: "Invalid or expired refresh token"
         });
     }
 };
