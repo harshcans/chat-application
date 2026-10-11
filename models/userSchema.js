@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
@@ -19,7 +20,23 @@ const userSchema = new mongoose.Schema(
 
         password: {
             type: String,
-            required: true
+            required: true,
+            minlength: 6
+        },
+
+        isVerified: {
+            type: Boolean,
+            default: false
+        },
+
+        otp: {
+            type: String,
+            default: null
+        },
+
+        otpExpiresAt: {
+            type: Date,
+            default: null
         }
     },
     {
