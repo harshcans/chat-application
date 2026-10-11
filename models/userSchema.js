@@ -15,7 +15,10 @@ const userSchema = new mongoose.Schema(
             unique: true,
             lowercase: true,
             trim: true,
-            match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+             match: [
+                /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                "Please provide a valid email address"
+            ]
         },
 
         password: {
@@ -37,6 +40,11 @@ const userSchema = new mongoose.Schema(
         otpExpiresAt: {
             type: Date,
             default: null
+        },
+         refreshTokenHash: {
+            type: String,
+            default: null,
+            select: false
         }
     },
     {
