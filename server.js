@@ -11,6 +11,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/conversations", require("./routes/conversationRoutes"));
+app.use("/api/messages", require("./routes/messageRoutes"));
 
 const startServer = async () => {
     try {
