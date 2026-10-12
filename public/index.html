@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat Test</title>
+</head>
+<body>
+    <h2>Real-Time Chat</h2>
+
+    <input id="token" placeholder="Paste access token" size="50">
+    <br><br>
+
+    <input id="conversationId" placeholder="Paste conversation ID" size="50">
+    <br><br>
+
+    <button id="connect">Connect</button>
+    <p id="status">Not connected</p>
+
+    <hr>
+
+    <div id="messages"></div>
+
+    <input id="message" placeholder="Type a message">
+    <button id="send">Send Message</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        let socket;
+
+        const status = document.getElementById("status");
+        const messages = document.getElementById("messages");
+
+        document.getElementById("connect").onclick = () => {
+            const token = document.getElementById("token").value.trim();
+            const conversationId =
+                document.getElementById("conversationId").value.trim();
+
+            if (!token || !conversationId) {
+                alert("Enter your access token and conversation ID");
+                return;
+            }
+
+            socket = io({
+                auth: { token }
+            });
+
+            socket.on("connect", () => {
+                status.textContent = "Connected";
+
+                socket.emit("joinConversation", conversationId, (result) => {
+                    status.textContent = result.message;
+                });
+            });
+
+            socket.on("connect_error", (error) => {
+                status.textContent = "Connection failed: " + error.message;
+            });
+
+            socket.on("newMessage", (message) => {
+                const item = document.createElement("p");
+                item.textContent =
+                    (message.sender?.name || "User") + ": " + message.text;
+
+                messages.appendChild(item);
+            });
+        };
+
+        document.getElementById("send").onclick = () => {
+            const conversationId =
+                document.getElementById("conversationId").value.trim();
+            const text = document.getElementById("message").value.trim();
+
+            if (!socket || !socket.connected || !text) {
+                alert("Connect first and enter a message");
+                return;
+            }
+
+            socket.emit("sendMessage", { conversationId, text }, (result) => {
+                if (result.success) {
+                    document.getElementById("message").value = "";
+                } else {
+                    alert(result.message);
+                }
+            });
+        };
+    </script>
+</body>
+</html>
