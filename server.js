@@ -3,32 +3,21 @@ require("dotenv").config();
 
 const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const connectDB = require("./config/db");
+const initializeSocket = require("./socket");
 
 const app = express();
 const server = http.createServer(app);
 
-const io = new Server(server);
+const io = initializeSocket(server);
 
 app.use(express.json());
+app.use(express.static("public"));
 
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/conversations", require("./routes/conversationRoutes"));
 app.use("/api/messages", require("./routes/messageRoutes"));
-
-io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
-  socket.on("joinConversation", (conversationId) => {
-    socket.join(conversationId);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
-  });
-});
 
 const startServer = async () => {
   try {
