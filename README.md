@@ -60,8 +60,6 @@ chat-application/
 └── README.md
 ```
 
-Adjust the tree if your local filenames differ.
-
 ## Requirements
 
 - Node.js and npm
