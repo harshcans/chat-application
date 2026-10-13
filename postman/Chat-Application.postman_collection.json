@@ -1,0 +1,154 @@
+{
+  "info": {
+    "_postman_id": "f35a39c0-ef39-4c1a-b9b5-9e33e7b62e22",
+    "name": "Chat Application API",
+    "description": "Requests for the Node.js/Express real-time chat application. Start the backend first. Enter OTPs manually from email. Check your controllers if response shapes differ.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "email", "value": "aarav@example.com", "type": "string" },
+    { "key": "password", "value": "StrongPassword123!", "type": "string" },
+    { "key": "name", "value": "Aarav", "type": "string" },
+    { "key": "otp", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "conversationId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Register a new user. Use an email address that is not already registered. Check your inbox for the OTP."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"otp\": \"{{otp}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/verify-otp",
+            "description": "Enter the OTP received by email in the collection variable otp."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/resend-otp"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const response = pm.response.json();", "const data = response.data || response;", "if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);", "if (data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);", "if (data.user && data.user._id) pm.collectionVariables.set('userId', data.user._id);", "console.log('If tokens were not saved, inspect the login response and set collection variables manually.');"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const response = pm.response.json();", "const data = response.data || response;", "if (data.accessToken) pm.collectionVariables.set('accessToken', data.accessToken);", "if (data.refreshToken) pm.collectionVariables.set('refreshToken', data.refreshToken);"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/refresh-token",
+            "description": "Use the current refresh token. If rotation is enabled, use the new token returned by this request next time."
+          },
+          "response": []
+        },
+        {
+          "name": "Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["if (pm.response.code >= 200 && pm.response.code < 300) {", "  pm.collectionVariables.unset('accessToken');", "  pm.collectionVariables.unset('refreshToken');", "}"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/auth/logout",
+            "description": "If your logout controller does not expect a body, remove the body in this request."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/users" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "item": [
+        {
+          "name": "Create Conversation",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["const response = pm.response.json();", "const data = response.conversation || response.data || response;", "if (data.conversation && data.conversation._id) pm.collectionVariables.set('conversationId', data.conversation._id);", "else if (data._id) pm.collectionVariables.set('conversationId', data._id);", "else console.log('Set conversationId manually from the response if it was not captured.');"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"participantId\": \"{{userId}}\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/conversations",
+            "description": "Set userId to the other user's MongoDB _id before sending this request."
+          },
+          "response": []
+        },
+        {
+          "name": "List Conversations",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/conversations" },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Send Message (REST)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"text\": \"Hey! How are you?\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/api/messages/{{conversationId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Message History",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }], "url": "{{baseUrl}}/api/messages/{{conversationId}}" },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
