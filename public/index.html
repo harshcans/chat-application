@@ -1,154 +1,233 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f8f7f4">
-  <title>Morrow — Messages</title>
-  <link rel="stylesheet" href="./style.css">
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="./api.js" defer></script>
-  <script src="./auth.js" defer></script>
-  <script src="./chat.js" defer></script>
-</head>
-<body>
-  <main id="authView" class="auth-layout">
-    <section class="auth-brand">
-      <a href="/" class="brand">morrow<span>.</span></a>
-      <div class="brand-message">
-        <p class="eyebrow">A quieter way to connect</p>
-        <h1>Good conversations<br>start here.</h1>
-        <p class="muted">A simple space for the people who matter.</p>
-      </div>
-      <p class="footer-note">Private conversations. Thoughtfully simple.</p>
-    </section>
-
-    <section class="auth-panel">
-      <div class="auth-box">
-        <div id="loginForm">
-          <p class="eyebrow">WELCOME BACK</p>
-          <h2>Sign in</h2>
-          <p class="muted">Pick up where your conversations left off.</p>
-
-          <form id="login">
-            <label for="loginEmail">Email address</label>
-            <input id="loginEmail" type="email" placeholder="you@example.com" required>
-
-            <label for="loginPassword">Password</label>
-            <input id="loginPassword" type="password" placeholder="Your password" required>
-
-            <button class="primary-button" type="submit">Sign in <span>→</span></button>
-          </form>
-
-          <p class="switch-auth">New here? <button type="button" class="text-button" id="showRegister">Create an account</button></p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f8f7f4" />
+    <title>Morrow — Messages</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="./api.js" defer></script>
+    <script src="/chat.js" defer></script>
+    <script src="/auth.js" defer></script>
+  </head>
+  <body>
+    <main id="authView" class="auth-layout">
+      <section class="auth-brand">
+        <a href="/" class="brand">morrow<span>.</span></a>
+        <div class="brand-message">
+          <p class="eyebrow">A quieter way to connect</p>
+          <h1>Good conversations<br />start here.</h1>
+          <p class="muted">A simple space for the people who matter.</p>
         </div>
+        <p class="footer-note">Private conversations. Thoughtfully simple.</p>
+      </section>
 
-        <div id="registerForm" hidden>
-          <p class="eyebrow">A FRESH START</p>
-          <h2>Create account</h2>
-          <p class="muted">A few details, then you're in.</p>
+      <section class="auth-panel">
+        <div class="auth-box">
+          <div id="loginForm">
+            <p class="eyebrow">WELCOME BACK</p>
+            <h2>Sign in</h2>
+            <p class="muted">Pick up where your conversations left off.</p>
 
-          <form id="register">
-            <label for="registerName">Full name</label>
-            <input id="registerName" type="text" placeholder="Your name" required>
+            <form id="login">
+              <label for="loginEmail">Email address</label>
+              <input
+                id="loginEmail"
+                type="email"
+                placeholder="you@example.com"
+                required
+              />
 
-            <label for="registerEmail">Email address</label>
-            <input id="registerEmail" type="email" placeholder="you@example.com" required>
+              <label for="loginPassword">Password</label>
+              <input
+                id="loginPassword"
+                type="password"
+                placeholder="Your password"
+                required
+              />
 
-            <label for="registerPassword">Password</label>
-            <input id="registerPassword" type="password" placeholder="Create a password" required>
+              <button class="primary-button" type="submit">
+                Sign in <span>→</span>
+              </button>
+            </form>
 
-            <button class="primary-button" type="submit">Create account <span>→</span></button>
-          </form>
-
-          <p class="switch-auth">Already a member? <button type="button" class="text-button" id="showLogin">Sign in</button></p>
-        </div>
-
-        <div id="verifyForm" hidden>
-          <p class="eyebrow">ONE LAST STEP</p>
-          <h2>Verify your email</h2>
-          <p class="muted">Enter the verification code sent to your email.</p>
-
-          <form id="verify">
-            <label for="verifyEmail">Email address</label>
-            <input id="verifyEmail" type="email" required>
-
-            <label for="otp">Verification code</label>
-            <input id="otp" type="text" inputmode="numeric" placeholder="Enter your OTP" required>
-
-            <button class="primary-button" type="submit">Verify email <span>→</span></button>
-          </form>
-
-          <p class="switch-auth"><button type="button" class="text-button" id="backToLogin">Back to sign in</button></p>
-        </div>
-
-        <p id="authStatus" class="status-message" role="status"></p>
-      </div>
-    </section>
-  </main>
-
-  <main id="chatView" class="chat-layout" hidden>
-    <aside class="sidebar">
-      <a href="/" class="brand sidebar-brand">morrow<span>.</span></a>
-
-      <div class="sidebar-heading">
-        <div>
-          <p class="eyebrow">YOUR SPACE</p>
-          <h2>Messages</h2>
-        </div>
-        <button id="newChat" class="icon-button" title="Start a conversation" aria-label="Start a conversation">＋</button>
-      </div>
-
-      <div class="search-wrap">
-        <span>⌕</span>
-        <input id="searchUsers" type="search" placeholder="Search people">
-      </div>
-
-      <div id="peopleResults" class="people-results" hidden></div>
-
-      <p class="section-label">RECENT CONVERSATIONS</p>
-      <div id="conversationList" class="conversation-list">
-        <p class="empty-note">Loading conversations...</p>
-      </div>
-
-      <div class="sidebar-bottom">
-        <div class="user-avatar" id="myAvatar">Y</div>
-        <div class="current-user">
-          <strong id="myName">You</strong>
-          <span id="myEmail"></span>
-        </div>
-        <button id="logout" class="icon-button logout-button" title="Sign out" aria-label="Sign out">↗</button>
-      </div>
-    </aside>
-
-    <section class="chat-main">
-      <div id="emptyChat" class="empty-chat">
-        <div class="empty-symbol">m.</div>
-        <h2>A little more connected.</h2>
-        <p class="muted">Choose a conversation or find someone new to talk to.</p>
-        <button id="emptyNewChat" class="secondary-button">Start a conversation <span>→</span></button>
-      </div>
-
-      <div id="conversationView" class="conversation-view" hidden>
-        <header class="chat-header">
-          <div class="user-avatar" id="chatAvatar">A</div>
-          <div>
-            <h3 id="chatName">Conversation</h3>
-            <p id="chatSubtitle" class="muted">Messages are saved in your conversation</p>
+            <p class="switch-auth">
+              New here?
+              <button type="button" class="text-button" id="showRegister">
+                Create an account
+              </button>
+            </p>
           </div>
-        </header>
 
-        <div id="messageList" class="message-list" aria-live="polite"></div>
+          <div id="registerForm" hidden>
+            <p class="eyebrow">A FRESH START</p>
+            <h2>Create account</h2>
+            <p class="muted">A few details, then you're in.</p>
 
-        <form id="messageForm" class="composer">
-          <input id="messageInput" type="text" maxlength="5000" placeholder="Write a message..." autocomplete="off" required>
-          <button type="submit" class="send-button" aria-label="Send message">↑</button>
-        </form>
-      </div>
-    </section>
-  </main>
+            <form id="register">
+              <label for="registerName">Full name</label>
+              <input
+                id="registerName"
+                type="text"
+                placeholder="Your name"
+                required
+              />
 
-  <div id="toast" class="toast" role="status"></div>
-</body>
+              <label for="registerEmail">Email address</label>
+              <input
+                id="registerEmail"
+                type="email"
+                placeholder="you@example.com"
+                required
+              />
+
+              <label for="registerPassword">Password</label>
+              <input
+                id="registerPassword"
+                type="password"
+                placeholder="Create a password"
+                required
+              />
+
+              <button class="primary-button" type="submit">
+                Create account <span>→</span>
+              </button>
+            </form>
+
+            <p class="switch-auth">
+              Already a member?
+              <button type="button" class="text-button" id="showLogin">
+                Sign in
+              </button>
+            </p>
+          </div>
+
+          <div id="verifyForm" hidden>
+            <p class="eyebrow">ONE LAST STEP</p>
+            <h2>Verify your email</h2>
+            <p class="muted">Enter the verification code sent to your email.</p>
+
+            <form id="verify">
+              <label for="verifyEmail">Email address</label>
+              <input id="verifyEmail" type="email" required />
+
+              <label for="otp">Verification code</label>
+              <input
+                id="otp"
+                type="text"
+                inputmode="numeric"
+                placeholder="Enter your OTP"
+                required
+              />
+
+              <button class="primary-button" type="submit">
+                Verify email <span>→</span>
+              </button>
+            </form>
+
+            <p class="switch-auth">
+              <button type="button" class="text-button" id="backToLogin">
+                Back to sign in
+              </button>
+            </p>
+          </div>
+
+          <p id="authStatus" class="status-message" role="status"></p>
+        </div>
+      </section>
+    </main>
+
+    <main id="chatView" class="chat-layout" hidden>
+      <aside class="sidebar">
+        <a href="/" class="brand sidebar-brand">morrow<span>.</span></a>
+
+        <div class="sidebar-heading">
+          <div>
+            <p class="eyebrow">YOUR SPACE</p>
+            <h2>Messages</h2>
+          </div>
+          <button
+            id="newChat"
+            class="icon-button"
+            title="Start a conversation"
+            aria-label="Start a conversation"
+          >
+            ＋
+          </button>
+        </div>
+
+        <div class="search-wrap">
+          <span>⌕</span>
+          <input id="searchUsers" type="search" placeholder="Search people" />
+        </div>
+
+        <div id="peopleResults" class="people-results" hidden></div>
+
+        <p class="section-label">RECENT CONVERSATIONS</p>
+        <div id="conversationList" class="conversation-list">
+          <p class="empty-note">Loading conversations...</p>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="user-avatar" id="myAvatar">Y</div>
+          <div class="current-user">
+            <strong id="myName">You</strong>
+            <span id="myEmail"></span>
+          </div>
+          <button
+            id="logout"
+            class="icon-button logout-button"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            ↗
+          </button>
+        </div>
+      </aside>
+
+      <section class="chat-main">
+        <div id="emptyChat" class="empty-chat">
+          <div class="empty-symbol">m.</div>
+          <h2>A little more connected.</h2>
+          <p class="muted">
+            Choose a conversation or find someone new to talk to.
+          </p>
+          <button id="emptyNewChat" class="secondary-button">
+            Start a conversation <span>→</span>
+          </button>
+        </div>
+
+        <div id="conversationView" class="conversation-view" hidden>
+          <header class="chat-header">
+            <div class="user-avatar" id="chatAvatar">A</div>
+            <div>
+              <h3 id="chatName">Conversation</h3>
+              <p id="chatSubtitle" class="muted">
+                Messages are saved in your conversation
+              </p>
+            </div>
+          </header>
+
+          <div id="messageList" class="message-list" aria-live="polite"></div>
+
+          <form id="messageForm" class="composer">
+            <input
+              id="messageInput"
+              type="text"
+              maxlength="5000"
+              placeholder="Write a message..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit" class="send-button" aria-label="Send message">
+              ↑
+            </button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status"></div>
+  </body>
 </html>
